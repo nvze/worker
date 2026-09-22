@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kumpulan Tulisan</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
+        .card { background: #fff; padding: 1rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 6px; }
+        a { text-decoration: none; color: #007bff; font-weight: bold; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h2>Daftar Tulisan dari GitHub</h2>
+    <div id="tulisan-container">Memuat data...</div>
+
+    <script>
+        async function loadTulisan() {
+            const container = document.getElementById('tulisan-container');
+            try {
+                const response = await fetch('/api/tulisan');
+                const data = await response.json();
+                
+                container.innerHTML = '';
+                
+                // GitHub API mengembalikan array of objects untuk isi folder
+                data.forEach(file => {
+                    if (file.type === 'file') {
+                        const div = document.createElement('div');
+                        div.className = 'card';
+                        div.innerHTML = `<a href="${file.download_url}" target="_blank">${file.name}</a>`;
+                        container.appendChild(div);
+                    }
+                });
+            } catch (error) {
+                container.innerHTML = 'Gagal memuat data tulisan.';
+            }
+        }
+        
+        loadTulisan();
+    </script>
+</body>
+</html>
