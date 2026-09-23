@@ -5,36 +5,126 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kumpulan Tulisan</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
-        .card { background: #fff; padding: 1rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 6px; }
-        a { text-decoration: none; color: #007bff; font-weight: bold; }
-        a:hover { text-decoration: underline; }
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 600px; 
+            margin: 2rem auto; 
+            padding: 0 1rem; 
+            background-color: #f9f9f9;
+        }
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 2px solid #ddd; 
+            padding-bottom: 10px; 
+            margin-bottom: 20px; 
+        }
+        .card { 
+            background: #fff; 
+            padding: 1rem; 
+            margin-bottom: 1rem; 
+            border: 1px solid #ddd; 
+            border-radius: 6px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateX(5px);
+            border-left: 4px solid #007bff;
+        }
+        a.title-link { 
+            text-decoration: none; 
+            color: #007bff; 
+            font-weight: bold; 
+            font-size: 1.1em; 
+            display: block;
+        }
+        a.title-link:hover { 
+            text-decoration: underline; 
+            color: #0056b3; 
+        }
+        .error-box { 
+            color: #721c24; 
+            background-color: #f8d7da; 
+            padding: 1rem; 
+            border: 1px solid #f5c6cb; 
+            border-radius: 6px; 
+        }
+        .logout-btn { 
+            padding: 8px 15px; 
+            background-color: #dc3545; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 4px; 
+            font-size: 0.9em; 
+        }
+        .logout-btn:hover { 
+            background-color: #c82333; 
+        }
     </style>
 </head>
 <body>
-    <h2>Daftar Tulisan dari GitHub</h2>
-    <div id="tulisan-container">Memuat data...</div>
+    <div class="header">
+        <h2>Daftar Tulisan</h2>
+        <a href="/" class="logout-btn">Logout</a>
+    </div>
+    
+    <div id="tulisan-container">Memuat data dari GitHub...</div>
 
     <script>
         async function loadTulisan() {
             const container = document.getElementById('tulisan-container');
             try {
                 const response = await fetch('/api/tulisan');
-                const data = await response.json();
                 
+                // Cek jika status dari worker bukan 200 OK (Gagal)
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || `Status Error: ${response.status}`);
+                }
+
+                // Jika berhasil, parsing data JSON dari GitHub
+                const data = await response.json();
                 container.innerHTML = '';
                 
-                // GitHub API mengembalikan array of objects untuk isi folder
+                // Jika tidak ada error tapi folder kosong
+                if (data.length === 0) {
+                    container.innerHTML = '<p>Belum ada file di folder tulisan.</p>';
+                    return;
+                }
+
+                // Looping data file
+                let fileCount = 0;
                 data.forEach(file => {
-                    if (file.type === 'file') {
+                    // Hanya menampilkan file dengan ekstensi .md
+                    if (file.type === 'file' && file.name.endsWith('.md')) {
+                        fileCount++;
                         const div = document.createElement('div');
                         div.className = 'card';
-                        div.innerHTML = `<a href="${file.download_url}" target="_blank">${file.name}</a>`;
+                        
+                        // Hapus ekstensi .md untuk tampilan judul
+                        const judul = file.name.replace('.md', '');
+                        
+                        // Download_url mengarah langsung ke file mentahnya
+                        div.innerHTML = `<a class="title-link" href="${file.download_url}" target="_blank">${judul}</a>`;
                         container.appendChild(div);
                     }
                 });
+                
+                // Jika ada file tapi tidak ada yang berakhiran .md
+                if (fileCount === 0) {
+                    container.innerHTML = '<p>Tidak ditemukan file markdown (.md) di dalam folder.</p>';
+                }
+
             } catch (error) {
-                container.innerHTML = 'Gagal memuat data tulisan.';
+                // Menampilkan kotak merah dengan rincian error
+                container.innerHTML = `
+                    <div class="error-box">
+                        <strong>Gagal memuat data!</strong><br><br>
+                        Pesan dari server: <em>${error.message}</em>
+                    </div>
+                `;
             }
         }
         
